@@ -387,10 +387,14 @@ function saveEventFromDialog(event) {
 function deleteSelectedFromDialog() {
   const id = els.eventId.value;
   if (!id) return;
+  deleteEvent(id);
+}
+
+function deleteEvent(id) {
   state.events = state.events.filter((event) => event.id !== id);
   if (state.selectedEventId === id) state.selectedEventId = null;
   if (els.commentEventId.value === id && els.commentDialog.open) els.commentDialog.close();
-  els.eventDialog.close();
+  if (els.eventId.value === id && els.eventDialog.open) els.eventDialog.close();
   render();
   persist();
 }
@@ -422,7 +426,7 @@ function renderBoard() {
             </div>
             <button class="day-add" type="button" data-add-day="${day.value}" title="Bu güne plan ekle">+</button>
           </div>
-          <div class="plans">
+          <div class="plans" data-drop-day="${day.value}">
             ${
               events.length
                 ? events.map(renderPlanItem).join("")
@@ -440,11 +444,27 @@ function renderBoard() {
 
   els.board.querySelectorAll("[data-event-id]").forEach((button) => {
     button.addEventListener("click", (event) => {
-      if (event.target.closest("[data-comment-id]")) return;
+      if (event.target.closest("[data-comment-id], [data-delete-id]")) return;
       selectEvent(button.dataset.eventId);
     });
     button.addEventListener("keydown", (event) => {
+      if (event.target.closest("[data-comment-id], [data-delete-id]")) return;
       if (event.key === "Enter") selectEvent(button.dataset.eventId);
+    });
+    button.addEventListener("dragstart", handleDragStart);
+    button.addEventListener("dragend", handleDragEnd);
+  });
+
+  els.board.querySelectorAll("[data-drop-day]").forEach((dropZone) => {
+    dropZone.addEventListener("dragover", handleDragOver);
+    dropZone.addEventListener("dragleave", handleDragLeave);
+    dropZone.addEventListener("drop", handleDrop);
+  });
+
+  els.board.querySelectorAll("[data-delete-id]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      deleteEvent(button.dataset.deleteId);
     });
   });
 
@@ -459,7 +479,8 @@ function renderBoard() {
 function renderPlanItem(event) {
   const selected = state.selectedEventId === event.id ? " selected" : "";
   return `
-    <article class="plan-item${selected}" data-event-id="${event.id}" tabindex="0">
+    <article class="plan-item${selected}" data-event-id="${event.id}" tabindex="0" draggable="true">
+      <button class="delete-plan-button" type="button" data-delete-id="${event.id}" title="Sil" aria-label="Sil">×</button>
       <span class="plan-time">${event.time || "Saat yok"}</span>
       <span class="plan-title">${escapeHtml(event.title)}</span>
       ${event.area ? `<span class="plan-place">${escapeHtml(event.area)}</span>` : ""}
@@ -468,6 +489,57 @@ function renderPlanItem(event) {
       </button>
     </article>
   `;
+}
+
+function handleDragStart(event) {
+  const item = event.currentTarget;
+  item.classList.add("dragging");
+  event.dataTransfer.effectAllowed = "move";
+  event.dataTransfer.setData("text/plain", item.dataset.eventId);
+}
+
+function handleDragEnd(event) {
+  event.currentTarget.classList.remove("dragging");
+  els.board.querySelectorAll(".plans.drag-over").forEach((dropZone) => {
+    dropZone.classList.remove("drag-over");
+  });
+}
+
+function handleDragOver(event) {
+  event.preventDefault();
+  event.currentTarget.classList.add("drag-over");
+  event.dataTransfer.dropEffect = "move";
+}
+
+function handleDragLeave(event) {
+  if (!event.currentTarget.contains(event.relatedTarget)) {
+    event.currentTarget.classList.remove("drag-over");
+  }
+}
+
+function handleDrop(event) {
+  event.preventDefault();
+  const dropZone = event.currentTarget;
+  dropZone.classList.remove("drag-over");
+
+  const id = event.dataTransfer.getData("text/plain");
+  const targetDay = dropZone.dataset.dropDay;
+  const draggedEvent = getEvent(id);
+  if (!draggedEvent || !targetDay || draggedEvent.day === targetDay) return;
+
+  state.events = state.events.map((item) =>
+    item.id === id
+      ? {
+          ...item,
+          day: targetDay,
+          updatedAt: new Date().toISOString(),
+          updatedBy: personName || "İsimsiz",
+        }
+      : item,
+  );
+  state.selectedEventId = id;
+  render();
+  persist();
 }
 
 function renderAttachment(file) {

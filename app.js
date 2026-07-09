@@ -15,6 +15,16 @@ const days = [
   { value: "26", date: "26 July", weekday: "Pazar" },
 ];
 
+const eventTypes = {
+  todo: "Plan",
+  flight: "Uçuş",
+  hotel: "Otel",
+  transfer: "Transfer",
+  food: "Yemek",
+  sight: "Gezilecek",
+  reservation: "Rezervasyon",
+};
+
 const defaultStarterEvents = [
   {
     id: uid(),
@@ -71,6 +81,7 @@ const els = {
   deleteEventBtn: document.querySelector("#deleteEventBtn"),
   eventId: document.querySelector("#eventId"),
   eventTitle: document.querySelector("#eventTitle"),
+  eventType: document.querySelector("#eventType"),
   eventDay: document.querySelector("#eventDay"),
   eventTime: document.querySelector("#eventTime"),
   eventArea: document.querySelector("#eventArea"),
@@ -195,9 +206,20 @@ function mergeStarterEvents(nextState, { persistVersion = true } = {}) {
 }
 
 function mergeSeedEvent(existingEvent, starterEvent) {
+  const userEdited = existingEvent.updatedBy && existingEvent.updatedBy !== "Sistem";
+  const baseEvent = userEdited
+    ? {
+        ...starterEvent,
+        ...existingEvent,
+        type: existingEvent.type || starterEvent.type,
+      }
+    : {
+        ...existingEvent,
+        ...starterEvent,
+      };
+
   return {
-    ...existingEvent,
-    ...starterEvent,
+    ...baseEvent,
     comments: existingEvent.comments,
     attachments: mergeAttachments(starterEvent.attachments, existingEvent.attachments).filter(
       (attachment) => !isSensitiveAttachment(attachment),
@@ -241,6 +263,7 @@ function normalizeEvent(event) {
     id: event.id || uid(),
     day: days.some((day) => day.value === migratedDay) ? migratedDay : "20",
     time: event.time || "",
+    type: validEventType(event.type || inferEventType(event)),
     title: event.title || "Adsız plan",
     area: event.area || "",
     address: event.address || "",
@@ -304,6 +327,7 @@ function quickAdd() {
     id: uid(),
     day: els.quickDay.value,
     time: "",
+    type: "todo",
     title,
     area: "",
     address: "",
@@ -327,6 +351,7 @@ function openNewEvent(day) {
   els.formTitle.textContent = `${dayLabel(day)} için plan`;
   els.eventForm.reset();
   els.eventId.value = "";
+  els.eventType.value = "todo";
   els.eventDay.value = day;
   els.eventAttachmentsBlock.hidden = true;
   els.eventAttachmentList.innerHTML = "";
@@ -346,6 +371,7 @@ function openEditEvent(id) {
   els.formTitle.textContent = "Planı düzenle";
   els.eventId.value = event.id;
   els.eventTitle.value = event.title;
+  els.eventType.value = event.type || "todo";
   els.eventDay.value = event.day;
   els.eventTime.value = event.time;
   els.eventArea.value = event.area;
@@ -371,6 +397,7 @@ function saveEventFromDialog(event) {
     id,
     day: els.eventDay.value,
     time: els.eventTime.value,
+    type: els.eventType.value,
     title: els.eventTitle.value.trim(),
     area: els.eventArea.value.trim(),
     address: els.eventAddress.value.trim(),
@@ -433,6 +460,8 @@ function renderBoard() {
   els.board.innerHTML = days
     .map((day) => {
       const events = state.events.filter((event) => event.day === day.value).sort(sortEvents);
+      const noTimeCount = events.filter((event) => !event.time).length;
+      const countLabel = `${events.length} plan${noTimeCount ? ` · ${noTimeCount} saatsiz` : ""}`;
       const heading =
         day.value === "common"
           ? `<span class="day-date common-title">Ortak</span>`
@@ -443,6 +472,7 @@ function renderBoard() {
             <div>
               ${heading}
               <span class="day-name">${day.weekday}</span>
+              <span class="day-count">${countLabel}</span>
             </div>
             <button class="day-add" type="button" data-add-day="${day.value}" title="Bu güne plan ekle">+</button>
           </div>
@@ -498,10 +528,14 @@ function renderBoard() {
 
 function renderPlanItem(event) {
   const selected = state.selectedEventId === event.id ? " selected" : "";
+  const type = validEventType(event.type);
   return `
-    <article class="plan-item${selected}" data-event-id="${event.id}" tabindex="0" draggable="true">
+    <article class="plan-item type-${type}${selected}" data-event-id="${event.id}" tabindex="0" draggable="true">
       <button class="delete-plan-button" type="button" data-delete-id="${event.id}" title="Sil" aria-label="Sil">×</button>
-      <span class="plan-time">${event.time || "Saat yok"}</span>
+      <span class="plan-meta">
+        <span class="plan-type">${escapeHtml(typeLabel(type))}</span>
+        <span class="plan-time">${event.time || "Saat yok"}</span>
+      </span>
       <span class="plan-title">${escapeHtml(event.title)}</span>
       ${event.area ? `<span class="plan-place">${escapeHtml(event.area)}</span>` : ""}
       <button class="comment-button" type="button" data-comment-id="${event.id}" title="Yorumlar" aria-label="Yorumlar">
@@ -554,6 +588,7 @@ function handleDrop(event) {
           day: targetDay,
           createdAt: item.createdAt,
           createdBy: item.createdBy,
+          type: item.type || "todo",
           updatedAt: new Date().toISOString(),
           updatedBy: personName || "İsimsiz",
         }
@@ -584,6 +619,25 @@ function eventAuditText(event) {
   const createdBy = event.createdBy || event.updatedBy || "Bilinmiyor";
   const updatedBy = event.updatedBy || "Bilinmiyor";
   return `Ekleyen: ${createdBy} · ${formatDateTime(event.createdAt)} | Son düzenleyen: ${updatedBy} · ${formatDateTime(event.updatedAt)}`;
+}
+
+function typeLabel(type) {
+  return eventTypes[validEventType(type)] || eventTypes.todo;
+}
+
+function validEventType(type) {
+  return Object.prototype.hasOwnProperty.call(eventTypes, type) ? type : "todo";
+}
+
+function inferEventType(event) {
+  const text = `${event.title || ""} ${event.area || ""} ${event.notes || ""}`.toLocaleLowerCase("tr-TR");
+  if (/uçuş|ucus|\bflight\b|\bpc\d+/i.test(text)) return "flight";
+  if (/otel|hotel|check-in|check-out|inn|quarters/i.test(text)) return "hotel";
+  if (/transfer|taxi|stansted'dan|havaalan/i.test(text)) return "transfer";
+  if (/yemek|kahvaltı|kahvalti|restaurant|dinner|lunch|food/i.test(text)) return "food";
+  if (/rezervasyon|reservation|booking/i.test(text)) return "reservation";
+  if (/museum|müze|tour|studio|garden|gez/i.test(text)) return "sight";
+  return "todo";
 }
 
 function renderComment(comment) {

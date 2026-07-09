@@ -214,9 +214,18 @@ textarea:focus {
 }
 
 .day-name {
+  display: block;
   color: var(--muted);
   font-size: 0.82rem;
   font-weight: 800;
+}
+
+.day-count {
+  display: block;
+  margin-top: 6px;
+  color: var(--blue);
+  font-size: 0.72rem;
+  font-weight: 900;
 }
 
 .day-add {
@@ -243,11 +252,12 @@ textarea:focus {
 }
 
 .plan-item {
+  --type-color: var(--green);
   position: relative;
   width: 100%;
   min-height: 78px;
   border: 1px solid var(--line);
-  border-left: 4px solid var(--green);
+  border-left: 4px solid var(--type-color);
   border-radius: 8px;
   background: #fff;
   padding: 11px 40px 11px 11px;
@@ -268,6 +278,30 @@ textarea:focus {
 
 .plan-item.dragging {
   opacity: 0.58;
+}
+
+.plan-item.type-flight {
+  --type-color: #315f7a;
+}
+
+.plan-item.type-hotel {
+  --type-color: #7a4f2a;
+}
+
+.plan-item.type-transfer {
+  --type-color: #6d5a9a;
+}
+
+.plan-item.type-food {
+  --type-color: #a0522d;
+}
+
+.plan-item.type-sight {
+  --type-color: #496d55;
+}
+
+.plan-item.type-reservation {
+  --type-color: #bd3b31;
 }
 
 .delete-plan-button {
@@ -294,9 +328,30 @@ textarea:focus {
   background: #fff4f2;
 }
 
-.plan-time {
-  display: block;
+.plan-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
   margin-bottom: 5px;
+}
+
+.plan-type {
+  display: inline-flex;
+  align-items: center;
+  min-height: 19px;
+  border: 1px solid rgba(49, 95, 122, 0.16);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--type-color) 12%, #fff);
+  color: var(--type-color);
+  padding: 2px 7px;
+  font-size: 0.68rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.plan-time {
+  display: inline-flex;
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 900;
@@ -498,6 +553,7 @@ dialog::backdrop {
 
 .form-row label {
   flex: 1;
+  min-width: 0;
 }
 
 .ghost {
@@ -622,6 +678,11 @@ dialog::backdrop {
     font-size: 0.68rem;
   }
 
+  .day-count {
+    margin-top: 4px;
+    font-size: 0.62rem;
+  }
+
   .day-add {
     width: 31px;
     height: 31px;
@@ -637,8 +698,18 @@ dialog::backdrop {
     padding: 8px 33px 8px 8px;
   }
 
-  .plan-time {
+  .plan-meta {
     margin-bottom: 4px;
+    gap: 4px;
+  }
+
+  .plan-type {
+    min-height: 17px;
+    padding: 2px 6px;
+    font-size: 0.58rem;
+  }
+
+  .plan-time {
     font-size: 0.68rem;
   }
 
@@ -692,6 +763,11 @@ dialog::backdrop {
   .name-form label {
     gap: 5px;
     font-size: 0.76rem;
+  }
+
+  .form-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .dialog-head button {

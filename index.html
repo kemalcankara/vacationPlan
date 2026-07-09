@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Londra Tatil Planı</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">20-26 July · Londra</p>
+          <h1>Tatil planı</h1>
+        </div>
+        <div class="name-box">
+          <input id="personName" type="text" placeholder="Adın" autocomplete="name" />
+          <button id="saveNameBtn" type="button" title="Adı kaydet">✓</button>
+          <span id="syncStatus">Yerel</span>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="board-wrap">
+          <div class="quick-add">
+            <input id="quickTitle" type="text" placeholder="Yeni plan: kahvaltı, müze, rezervasyon..." />
+            <select id="quickDay" aria-label="Gün seç">
+              <option value="common">Ortak</option>
+              <option value="20">20 July</option>
+              <option value="21">21 July</option>
+              <option value="22">22 July</option>
+              <option value="23">23 July</option>
+              <option value="24">24 July</option>
+              <option value="25">25 July</option>
+              <option value="26">26 July</option>
+            </select>
+            <button id="quickAddBtn" type="button">Ekle</button>
+          </div>
+
+          <div id="dayBoard" class="day-board" aria-live="polite"></div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="eventDialog">
+      <form id="eventForm" method="dialog" class="event-form">
+        <div class="dialog-head">
+          <h2 id="formTitle">Plan ekle</h2>
+          <button id="closeDialogBtn" type="button" title="Kapat">×</button>
+        </div>
+        <input type="hidden" id="eventId" />
+        <label>
+          Başlık
+          <input id="eventTitle" type="text" required />
+        </label>
+        <div class="form-row">
+          <label>
+            Gün
+            <select id="eventDay">
+              <option value="common">Ortak</option>
+              <option value="20">20 July</option>
+              <option value="21">21 July</option>
+              <option value="22">22 July</option>
+              <option value="23">23 July</option>
+              <option value="24">24 July</option>
+              <option value="25">25 July</option>
+              <option value="26">26 July</option>
+            </select>
+          </label>
+          <label>
+            Saat
+            <input id="eventTime" type="time" />
+          </label>
+        </div>
+        <label>
+          Yer / kısa not
+          <input id="eventArea" type="text" placeholder="Soho, Westminster, otel..." />
+        </label>
+        <label>
+          Link
+          <input id="eventAddress" type="text" placeholder="Rezervasyon veya harita linki" />
+        </label>
+        <label>
+          Not
+          <textarea id="eventNotes" rows="3"></textarea>
+        </label>
+        <section id="eventAttachmentsBlock" class="dialog-section">
+          <h3>Bilet / rezervasyon linkleri</h3>
+          <div class="link-add">
+            <input id="attachmentName" type="text" placeholder="Başlık" />
+            <input id="attachmentUrl" type="url" placeholder="Google Drive, PDF veya rezervasyon linki" />
+            <button id="addAttachmentLinkBtn" type="button">Ekle</button>
+          </div>
+          <div id="eventAttachmentList" class="attachment-list"></div>
+        </section>
+        <div class="dialog-actions">
+          <button id="deleteEventBtn" class="ghost danger" type="button">Sil</button>
+          <button class="primary" type="submit">Kaydet</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="commentDialog">
+      <form id="commentForm" method="dialog" class="comment-dialog">
+        <div class="dialog-head">
+          <div>
+            <h2 id="commentTitle">Yorumlar</h2>
+            <p id="commentMeta" class="small"></p>
+          </div>
+          <button id="closeCommentBtn" type="button" title="Kapat">×</button>
+        </div>
+        <input id="commentEventId" type="hidden" />
+        <div id="commentList" class="comment-list"></div>
+        <textarea id="commentText" rows="3" placeholder="Yeni yorum yaz"></textarea>
+        <button class="primary" type="submit">Yorum ekle</button>
+      </form>
+    </dialog>
+
+    <dialog id="nameDialog">
+      <form method="dialog" id="nameForm" class="name-form">
+        <h2>Adını yaz</h2>
+        <p>Yorum ve değişikliklerde bu ad görünecek.</p>
+        <input id="dialogName" type="text" placeholder="Örn. Can" autocomplete="name" required />
+        <button class="primary" type="submit">Devam</button>
+      </form>
+    </dialog>
+
+    <script src="firebase.config.js"></script>
+    <script src="data/trip-events.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

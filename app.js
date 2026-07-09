@@ -76,6 +76,7 @@ const els = {
   eventArea: document.querySelector("#eventArea"),
   eventAddress: document.querySelector("#eventAddress"),
   eventNotes: document.querySelector("#eventNotes"),
+  eventAudit: document.querySelector("#eventAudit"),
   eventAttachmentsBlock: document.querySelector("#eventAttachmentsBlock"),
   attachmentName: document.querySelector("#attachmentName"),
   attachmentUrl: document.querySelector("#attachmentUrl"),
@@ -201,6 +202,8 @@ function mergeSeedEvent(existingEvent, starterEvent) {
     attachments: mergeAttachments(starterEvent.attachments, existingEvent.attachments).filter(
       (attachment) => !isSensitiveAttachment(attachment),
     ),
+    createdAt: existingEvent.createdAt || starterEvent.createdAt,
+    createdBy: existingEvent.createdBy || starterEvent.createdBy,
   };
 }
 
@@ -244,6 +247,8 @@ function normalizeEvent(event) {
     notes: event.notes || "",
     comments: Array.isArray(event.comments) ? event.comments : [],
     attachments: Array.isArray(event.attachments) ? event.attachments : [],
+    createdAt: event.createdAt || event.updatedAt || new Date().toISOString(),
+    createdBy: event.createdBy || event.updatedBy || "Bilinmiyor",
     updatedAt: event.updatedAt || new Date().toISOString(),
     updatedBy: event.updatedBy || "Bilinmiyor",
   };
@@ -293,6 +298,7 @@ function saveName(value) {
 function quickAdd() {
   const title = els.quickTitle.value.trim();
   if (!title) return;
+  const now = new Date().toISOString();
 
   const event = {
     id: uid(),
@@ -304,7 +310,9 @@ function quickAdd() {
     notes: "",
     comments: [],
     attachments: [],
-    updatedAt: new Date().toISOString(),
+    createdAt: now,
+    createdBy: personName || "İsimsiz",
+    updatedAt: now,
     updatedBy: personName || "İsimsiz",
   };
 
@@ -322,6 +330,7 @@ function openNewEvent(day) {
   els.eventDay.value = day;
   els.eventAttachmentsBlock.hidden = true;
   els.eventAttachmentList.innerHTML = "";
+  els.eventAudit.textContent = "";
   els.attachmentName.value = "";
   els.attachmentUrl.value = "";
   els.deleteEventBtn.style.visibility = "hidden";
@@ -342,6 +351,7 @@ function openEditEvent(id) {
   els.eventArea.value = event.area;
   els.eventAddress.value = event.address;
   els.eventNotes.value = event.notes;
+  els.eventAudit.textContent = eventAuditText(event);
   els.eventAttachmentsBlock.hidden = false;
   renderEventAttachments(event);
   els.attachmentName.value = "";
@@ -356,6 +366,7 @@ function saveEventFromDialog(event) {
   event.preventDefault();
   const id = els.eventId.value || uid();
   const existing = getEvent(id);
+  const now = new Date().toISOString();
   const saved = {
     id,
     day: els.eventDay.value,
@@ -366,7 +377,9 @@ function saveEventFromDialog(event) {
     notes: els.eventNotes.value.trim(),
     comments: existing?.comments || [],
     attachments: existing?.attachments || [],
-    updatedAt: new Date().toISOString(),
+    createdAt: existing?.createdAt || now,
+    createdBy: existing?.createdBy || personName || "İsimsiz",
+    updatedAt: now,
     updatedBy: personName || "İsimsiz",
   };
 
@@ -539,6 +552,8 @@ function handleDrop(event) {
       ? {
           ...item,
           day: targetDay,
+          createdAt: item.createdAt,
+          createdBy: item.createdBy,
           updatedAt: new Date().toISOString(),
           updatedBy: personName || "İsimsiz",
         }
@@ -563,6 +578,12 @@ function renderEventAttachments(event) {
   els.eventAttachmentList.innerHTML = event.attachments.length
     ? event.attachments.map(renderAttachment).join("")
     : `<p class="small">Henüz link yok.</p>`;
+}
+
+function eventAuditText(event) {
+  const createdBy = event.createdBy || event.updatedBy || "Bilinmiyor";
+  const updatedBy = event.updatedBy || "Bilinmiyor";
+  return `Ekleyen: ${createdBy} · ${formatDateTime(event.createdAt)} | Son düzenleyen: ${updatedBy} · ${formatDateTime(event.updatedAt)}`;
 }
 
 function renderComment(comment) {

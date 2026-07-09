@@ -402,9 +402,17 @@ textarea:focus {
 }
 
 .comment span,
-.small {
+.small,
+.event-audit {
   color: var(--muted);
   font-size: 0.78rem;
+}
+
+.event-audit {
+  margin: 0;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  line-height: 1.45;
 }
 
 .attachment {

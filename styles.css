@@ -517,8 +517,12 @@ dialog::backdrop {
 }
 
 @media (max-width: 720px) {
+  body {
+    font-size: 0.9rem;
+  }
+
   .page {
-    padding: 16px;
+    padding: 10px;
   }
 
   .topbar,
@@ -527,10 +531,42 @@ dialog::backdrop {
     flex-direction: column;
   }
 
+  .topbar {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .eyebrow {
+    margin-bottom: 4px;
+    font-size: 0.66rem;
+  }
+
+  h1 {
+    font-size: 1.65rem;
+    line-height: 1;
+  }
+
+  input,
+  select,
+  textarea {
+    padding: 8px 9px;
+    font-size: 0.86rem;
+  }
+
+  .name-box {
+    gap: 6px;
+    padding: 7px;
+  }
+
   .name-box,
   .quick-add {
     width: 100%;
-    grid-template-columns: 1fr 42px;
+    grid-template-columns: 1fr 36px;
+  }
+
+  .name-box button {
+    width: 36px;
+    height: 36px;
   }
 
   .name-box span,
@@ -538,15 +574,128 @@ dialog::backdrop {
     grid-column: 1 / -1;
   }
 
+  .quick-add {
+    gap: 7px;
+    margin-bottom: 9px;
+    padding: 8px;
+  }
+
+  .primary,
+  .quick-add button,
+  .ghost {
+    padding: 8px 10px;
+    font-size: 0.86rem;
+  }
+
   .quick-add select {
     min-width: 0;
+  }
+
+  .day-board {
+    width: 1320px;
+    gap: 8px;
+    padding-bottom: 4px;
+  }
+
+  .day-card {
+    min-height: 360px;
+  }
+
+  .day-head {
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .day-date {
+    font-size: 0.86rem;
+  }
+
+  .day-date strong {
+    font-size: 1.75rem;
+  }
+
+  .common-title {
+    font-size: 1.12rem;
+  }
+
+  .day-name {
+    font-size: 0.68rem;
+  }
+
+  .day-add {
+    width: 31px;
+    height: 31px;
+  }
+
+  .plans {
+    gap: 7px;
+    padding: 8px;
+  }
+
+  .plan-item {
+    min-height: 66px;
+    padding: 8px 33px 8px 8px;
+  }
+
+  .plan-time {
+    margin-bottom: 4px;
+    font-size: 0.68rem;
+  }
+
+  .plan-title {
+    font-size: 0.82rem;
+    line-height: 1.22;
+  }
+
+  .plan-place {
+    margin-top: 5px;
+    font-size: 0.7rem;
+  }
+
+  .delete-plan-button {
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    font-size: 0.92rem;
+  }
+
+  .comment-button {
+    right: 6px;
+    bottom: 6px;
+    min-width: 26px;
+    height: 26px;
+    padding: 0 6px;
+  }
+
+  .empty-day {
+    min-height: 86px;
+    font-size: 0.78rem;
   }
 
   .link-add {
     grid-template-columns: 1fr;
   }
 
-  .day-card {
-    min-height: 470px;
+  dialog {
+    width: min(440px, calc(100% - 18px));
+  }
+
+  .event-form,
+  .name-form,
+  .comment-dialog {
+    gap: 9px;
+    padding: 12px;
+  }
+
+  .event-form label,
+  .name-form label {
+    gap: 5px;
+    font-size: 0.76rem;
+  }
+
+  .dialog-head button {
+    width: 34px;
+    height: 34px;
   }
 }

@@ -387,6 +387,13 @@ function saveEventFromDialog(event) {
 function deleteSelectedFromDialog() {
   const id = els.eventId.value;
   if (!id) return;
+  confirmAndDeleteEvent(id);
+}
+
+function confirmAndDeleteEvent(id) {
+  const event = getEvent(id);
+  if (!event) return;
+  if (!window.confirm(`"${event.title}" silinsin mi?`)) return;
   deleteEvent(id);
 }
 
@@ -464,7 +471,7 @@ function renderBoard() {
   els.board.querySelectorAll("[data-delete-id]").forEach((button) => {
     button.addEventListener("click", (event) => {
       event.stopPropagation();
-      deleteEvent(button.dataset.deleteId);
+      confirmAndDeleteEvent(button.dataset.deleteId);
     });
   });
 

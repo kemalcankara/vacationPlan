@@ -7,35 +7,43 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="page">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">20-26 July · Londra</p>
+    <header class="hero">
+      <div class="hero-inner topbar">
+        <div class="brand">
+          <p class="eyebrow">20&ndash;26 Temmuz &middot; Londra</p>
           <h1>Tatil planı</h1>
         </div>
         <div class="name-box">
+          <span class="sync-pill" id="syncStatus" data-state="local">Yerel</span>
           <input id="personName" type="text" placeholder="Adın" autocomplete="name" />
-          <button id="saveNameBtn" type="button" title="Adı kaydet">✓</button>
-          <span id="syncStatus">Yerel</span>
+          <button id="saveNameBtn" type="button" title="Adı kaydet" class="icon-button">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3,8.5 6.5,12 13,4"/></svg>
+          </button>
         </div>
-      </header>
-
+      </div>
+    </header>
+    <div class="page">
       <main class="layout">
         <section class="board-wrap">
           <div class="quick-add">
             <input id="quickTitle" type="text" placeholder="Yeni plan: kahvaltı, müze, rezervasyon..." />
             <select id="quickDay" aria-label="Gün seç">
               <option value="common">Ortak</option>
-              <option value="20">20 July</option>
-              <option value="21">21 July</option>
-              <option value="22">22 July</option>
-              <option value="23">23 July</option>
-              <option value="24">24 July</option>
-              <option value="25">25 July</option>
-              <option value="26">26 July</option>
+              <option value="20">20 Tem</option>
+              <option value="21">21 Tem</option>
+              <option value="22">22 Tem</option>
+              <option value="23">23 Tem</option>
+              <option value="24">24 Tem</option>
+              <option value="25">25 Tem</option>
+              <option value="26">26 Tem</option>
             </select>
-            <button id="quickAddBtn" type="button">Ekle</button>
+            <button id="quickAddBtn" type="button" class="primary">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
+              <span>Ekle</span>
+            </button>
           </div>
+
+          <nav class="day-tabs" id="dayTabs" aria-label="Gün seç"></nav>
 
           <div id="dayBoard" class="day-board" aria-live="polite"></div>
         </section>
@@ -44,9 +52,12 @@
 
     <dialog id="eventDialog">
       <form id="eventForm" method="dialog" class="event-form">
+        <div class="sheet-handle" aria-hidden="true"></div>
         <div class="dialog-head">
           <h2 id="formTitle">Plan ekle</h2>
-          <button id="closeDialogBtn" type="button" title="Kapat">×</button>
+          <button id="closeDialogBtn" type="button" title="Kapat" class="icon-button">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+          </button>
         </div>
         <input type="hidden" id="eventId" />
         <label>
@@ -70,13 +81,13 @@
             Gün
             <select id="eventDay">
               <option value="common">Ortak</option>
-              <option value="20">20 July</option>
-              <option value="21">21 July</option>
-              <option value="22">22 July</option>
-              <option value="23">23 July</option>
-              <option value="24">24 July</option>
-              <option value="25">25 July</option>
-              <option value="26">26 July</option>
+              <option value="20">20 Tem</option>
+              <option value="21">21 Tem</option>
+              <option value="22">22 Tem</option>
+              <option value="23">23 Tem</option>
+              <option value="24">24 Tem</option>
+              <option value="25">25 Tem</option>
+              <option value="26">26 Tem</option>
             </select>
           </label>
           <label>
@@ -101,7 +112,7 @@
           <div class="link-add">
             <input id="attachmentName" type="text" placeholder="Başlık" />
             <input id="attachmentUrl" type="url" placeholder="Google Drive, PDF veya rezervasyon linki" />
-            <button id="addAttachmentLinkBtn" type="button">Ekle</button>
+            <button id="addAttachmentLinkBtn" type="button" class="ghost">Ekle</button>
           </div>
           <div id="eventAttachmentList" class="attachment-list"></div>
         </section>
@@ -115,12 +126,15 @@
 
     <dialog id="commentDialog">
       <form id="commentForm" method="dialog" class="comment-dialog">
+        <div class="sheet-handle" aria-hidden="true"></div>
         <div class="dialog-head">
           <div>
             <h2 id="commentTitle">Yorumlar</h2>
             <p id="commentMeta" class="small"></p>
           </div>
-          <button id="closeCommentBtn" type="button" title="Kapat">×</button>
+          <button id="closeCommentBtn" type="button" title="Kapat" class="icon-button">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+          </button>
         </div>
         <input id="commentEventId" type="hidden" />
         <div id="commentList" class="comment-list"></div>
@@ -131,6 +145,7 @@
 
     <dialog id="nameDialog">
       <form method="dialog" id="nameForm" class="name-form">
+        <div class="sheet-handle" aria-hidden="true"></div>
         <h2>Adını yaz</h2>
         <p>Yorum ve değişikliklerde bu ad görünecek.</p>
         <input id="dialogName" type="text" placeholder="Örn. Can" autocomplete="name" required />

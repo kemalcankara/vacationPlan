@@ -5,15 +5,24 @@ const planId = window.LONDON_PLAN_ID || "london-trip";
 const firebaseConfig = window.LONDON_PLANNER_FIREBASE;
 
 const days = [
-  { value: "common", date: "Ortak", weekday: "Güne bağlanmadı" },
-  { value: "20", date: "20 July", weekday: "Pazartesi" },
-  { value: "21", date: "21 July", weekday: "Salı" },
-  { value: "22", date: "22 July", weekday: "Çarşamba" },
-  { value: "23", date: "23 July", weekday: "Perşembe" },
-  { value: "24", date: "24 July", weekday: "Cuma" },
-  { value: "25", date: "25 July", weekday: "Cumartesi" },
-  { value: "26", date: "26 July", weekday: "Pazar" },
+  { value: "common", date: "Ortak", weekday: "Güne bağlanmadı", short: "Ortak" },
+  { value: "20", date: "20 Temmuz", weekday: "Pazartesi", short: "20 Pzt" },
+  { value: "21", date: "21 Temmuz", weekday: "Salı", short: "21 Sal" },
+  { value: "22", date: "22 Temmuz", weekday: "Çarşamba", short: "22 Çar" },
+  { value: "23", date: "23 Temmuz", weekday: "Perşembe", short: "23 Per" },
+  { value: "24", date: "24 Temmuz", weekday: "Cuma", short: "24 Cum" },
+  { value: "25", date: "25 Temmuz", weekday: "Cumartesi", short: "25 Cts" },
+  { value: "26", date: "26 Temmuz", weekday: "Pazar", short: "26 Paz" },
 ];
+
+const iconClose =
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>';
+const iconPlus =
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>';
+const iconClock =
+  '<svg class="mini-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 1.2"/></svg>';
+const iconPin =
+  '<svg class="mini-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1c-2.8 0-5 2.1-5 4.9 0 3.6 5 8.6 5 8.6s5-5 5-8.6C13 3.1 10.8 1 8 1zm0 6.8a1.9 1.9 0 110-3.8 1.9 1.9 0 010 3.8z"/></svg>';
 
 const eventTypes = {
   todo: "Plan",
@@ -64,10 +73,13 @@ const starterEvents = (externalStarterEvents?.length ? externalStarterEvents : d
 let state = loadState();
 let personName = localStorage.getItem(NAME_KEY) || "";
 let firebaseApi = null;
+let dayCardObserver = null;
 let suppressSave = false;
 
 const els = {
   board: document.querySelector("#dayBoard"),
+  dayTabs: document.querySelector("#dayTabs"),
+  boardWrap: document.querySelector(".board-wrap"),
   personName: document.querySelector("#personName"),
   saveNameBtn: document.querySelector("#saveNameBtn"),
   syncStatus: document.querySelector("#syncStatus"),
@@ -454,6 +466,7 @@ function selectEvent(id) {
 
 function render() {
   renderBoard();
+  renderDayTabs();
 }
 
 function renderBoard() {
@@ -465,28 +478,30 @@ function renderBoard() {
       const heading =
         day.value === "common"
           ? `<span class="day-date common-title">Ortak</span>`
-          : `<span class="day-date"><strong>${day.value}</strong> July</span>`;
+          : `<span class="day-date"><strong>${day.value}</strong> Temmuz</span>`;
       return `
-        <section class="day-card">
+        <section class="day-card" id="day-${day.value}" data-day-value="${day.value}">
           <div class="day-head">
             <div>
               ${heading}
               <span class="day-name">${day.weekday}</span>
               <span class="day-count">${countLabel}</span>
             </div>
-            <button class="day-add" type="button" data-add-day="${day.value}" title="Bu güne plan ekle">+</button>
+            <button class="day-add" type="button" data-add-day="${day.value}" title="Bu güne plan ekle">${iconPlus}</button>
           </div>
           <div class="plans" data-drop-day="${day.value}">
             ${
               events.length
                 ? events.map(renderPlanItem).join("")
-                : `<div class="empty-day">Boş</div>`
+                : `<div class="empty-day">Bu gün için henüz plan yok</div>`
             }
           </div>
         </section>
       `;
     })
     .join("");
+
+  observeDayCards();
 
   els.board.querySelectorAll("[data-add-day]").forEach((button) => {
     button.addEventListener("click", () => openNewEvent(button.dataset.addDay));
@@ -530,19 +545,79 @@ function renderPlanItem(event) {
   const selected = state.selectedEventId === event.id ? " selected" : "";
   const type = validEventType(event.type);
   return `
-    <article class="plan-item type-${type}${selected}" data-event-id="${event.id}" tabindex="0" draggable="true">
-      <button class="delete-plan-button" type="button" data-delete-id="${event.id}" title="Sil" aria-label="Sil">×</button>
-      <span class="plan-meta">
-        <span class="plan-type">${escapeHtml(typeLabel(type))}</span>
-        <span class="plan-time">${event.time || "Saat yok"}</span>
-      </span>
+    <article class="plan-item type-${type}${selected}" data-event-id="${event.id}" tabindex="0" draggable="true" title="${escapeAttr(typeLabel(type))}">
+      <button class="delete-plan-button" type="button" data-delete-id="${event.id}" title="Sil" aria-label="Sil">${iconClose}</button>
       <span class="plan-title">${escapeHtml(event.title)}</span>
-      ${event.area ? `<span class="plan-place">${escapeHtml(event.area)}</span>` : ""}
+      <div class="plan-sub">
+        <span class="plan-time">${iconClock}${event.time || "Saat yok"}</span>
+        ${event.area ? `<span class="plan-place">${iconPin}${escapeHtml(event.area)}</span>` : ""}
+      </div>
       <button class="comment-button" type="button" data-comment-id="${event.id}" title="Yorumlar" aria-label="Yorumlar">
         <span class="comment-icon" aria-hidden="true"></span>${event.comments.length ? `<strong>${event.comments.length}</strong>` : ""}
       </button>
     </article>
   `;
+}
+
+function renderDayTabs() {
+  if (!els.dayTabs) return;
+  els.dayTabs.innerHTML = days
+    .map((day) => {
+      const count = state.events.filter((event) => event.day === day.value).length;
+      return `
+        <button type="button" class="day-tab" data-tab-day="${day.value}">
+          ${day.short}${count ? `<span class="day-tab-count">${count}</span>` : ""}
+        </button>
+      `;
+    })
+    .join("");
+
+  els.dayTabs.querySelectorAll("[data-tab-day]").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const card = document.getElementById(`day-${tab.dataset.tabDay}`);
+      if (card) card.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+    });
+  });
+
+  setActiveDayTab(days[0]?.value);
+}
+
+function setActiveDayTab(value) {
+  if (!els.dayTabs) return;
+  els.dayTabs.querySelectorAll("[data-tab-day]").forEach((tab) => {
+    tab.classList.toggle("active", tab.dataset.tabDay === value);
+  });
+  const activeTab = els.dayTabs.querySelector(".day-tab.active");
+  if (activeTab) activeTab.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+}
+
+function observeDayCards() {
+  if (!els.boardWrap) return;
+  if (dayCardObserver) dayCardObserver.disconnect();
+
+  const cards = els.board.querySelectorAll(".day-card");
+  if (!cards.length) return;
+
+  const ratios = new Map();
+  dayCardObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        ratios.set(entry.target.dataset.dayValue, entry.intersectionRatio);
+      });
+      let bestValue = null;
+      let bestRatio = 0;
+      ratios.forEach((ratio, value) => {
+        if (ratio > bestRatio) {
+          bestRatio = ratio;
+          bestValue = value;
+        }
+      });
+      if (bestValue) setActiveDayTab(bestValue);
+    },
+    { root: els.boardWrap, threshold: [0, 0.25, 0.5, 0.75, 1] },
+  );
+
+  cards.forEach((card) => dayCardObserver.observe(card));
 }
 
 function handleDragStart(event) {
@@ -755,9 +830,14 @@ function sharedState(nextState) {
   };
 }
 
+function setSyncStatus(label, syncState) {
+  els.syncStatus.textContent = label;
+  els.syncStatus.dataset.state = syncState;
+}
+
 async function initFirebase() {
   if (!firebaseConfig?.apiKey) {
-    els.syncStatus.textContent = "Yerel";
+    setSyncStatus("Yerel", "local");
     return;
   }
 
@@ -804,14 +884,14 @@ async function initFirebase() {
       (error) => {
         console.error(error);
         suppressSave = false;
-        els.syncStatus.textContent = "Yerel";
+        setSyncStatus("Yerel", "local");
       },
     );
 
-    els.syncStatus.textContent = "Ortak";
+    setSyncStatus("Ortak", "shared");
   } catch (error) {
     console.error(error);
-    els.syncStatus.textContent = "Yerel";
+    setSyncStatus("Yerel", "local");
   }
 }
 

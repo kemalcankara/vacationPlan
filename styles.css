@@ -386,7 +386,7 @@ select {
 }
 
 .day-tabs {
-  display: flex;
+  display: none;
   gap: 6px;
   margin-bottom: 16px;
   padding: 5px;
@@ -442,14 +442,17 @@ select {
 }
 
 .day-board {
-  display: block;
-  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 14px;
+  align-items: start;
 }
 
 .day-card {
   position: relative;
   display: flex;
   flex-direction: column;
+  min-height: 280px;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -546,11 +549,11 @@ select {
 
 .plans {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: 1fr;
   align-content: start;
   gap: 10px;
   flex: 1;
-  padding: 16px;
+  padding: 14px;
   border: 2px solid transparent;
   border-radius: 0;
   transition:
@@ -970,8 +973,24 @@ dialog::backdrop {
     padding: 10px;
   }
 
+  .day-tabs {
+    display: flex;
+  }
+
+  .day-board {
+    display: block;
+  }
+
+  .day-card {
+    display: none;
+    min-height: 0;
+  }
+
+  .day-card.is-active {
+    display: flex;
+  }
+
   .plans {
-    grid-template-columns: 1fr;
     padding: 12px;
     gap: 8px;
   }

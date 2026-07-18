@@ -472,33 +472,37 @@ function render() {
 }
 
 function renderBoard() {
-  const day = days.find((item) => item.value === activeDay) || days[0];
-  const events = state.events.filter((event) => event.day === day.value).sort(sortEvents);
-  const noTimeCount = events.filter((event) => !event.time).length;
-  const countLabel = `${events.length} plan${noTimeCount ? ` · ${noTimeCount} saatsiz` : ""}`;
-  const heading =
-    day.value === "common"
-      ? `<span class="day-date common-title">Ortak</span>`
-      : `<span class="day-date"><strong>${day.value}</strong> Temmuz</span>`;
-  els.board.innerHTML = `
-    <section class="day-card" id="day-${day.value}" data-day-value="${day.value}">
-      <div class="day-head">
-        <div>
-          ${heading}
-          <span class="day-name">${day.weekday}</span>
-          <span class="day-count">${countLabel}</span>
-        </div>
-        <button class="day-add" type="button" data-add-day="${day.value}" title="Bu güne plan ekle">${iconPlus}</button>
-      </div>
-      <div class="plans" data-drop-day="${day.value}">
-        ${
-          events.length
-            ? events.map(renderPlanItem).join("")
-            : `<div class="empty-day">Bu gün için henüz plan yok</div>`
-        }
-      </div>
-    </section>
-  `;
+  els.board.innerHTML = days
+    .map((day) => {
+      const events = state.events.filter((event) => event.day === day.value).sort(sortEvents);
+      const noTimeCount = events.filter((event) => !event.time).length;
+      const countLabel = `${events.length} plan${noTimeCount ? ` · ${noTimeCount} saatsiz` : ""}`;
+      const heading =
+        day.value === "common"
+          ? `<span class="day-date common-title">Ortak</span>`
+          : `<span class="day-date"><strong>${day.value}</strong> Temmuz</span>`;
+      const active = day.value === activeDay ? " is-active" : "";
+      return `
+        <section class="day-card${active}" id="day-${day.value}" data-day-value="${day.value}">
+          <div class="day-head">
+            <div>
+              ${heading}
+              <span class="day-name">${day.weekday}</span>
+              <span class="day-count">${countLabel}</span>
+            </div>
+            <button class="day-add" type="button" data-add-day="${day.value}" title="Bu güne plan ekle">${iconPlus}</button>
+          </div>
+          <div class="plans" data-drop-day="${day.value}">
+            ${
+              events.length
+                ? events.map(renderPlanItem).join("")
+                : `<div class="empty-day">Bu gün için henüz plan yok</div>`
+            }
+          </div>
+        </section>
+      `;
+    })
+    .join("");
 
   els.board.querySelectorAll("[data-add-day]").forEach((button) => {
     button.addEventListener("click", () => openNewEvent(button.dataset.addDay));

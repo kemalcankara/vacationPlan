@@ -386,16 +386,17 @@ select {
 }
 
 .day-tabs {
-  display: none;
+  display: flex;
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   padding: 5px;
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  background: var(--surface);
   box-shadow: var(--shadow-sm);
   scrollbar-width: none;
+  scroll-behavior: smooth;
 }
 
 .day-tabs::-webkit-scrollbar {
@@ -441,17 +442,12 @@ select {
 }
 
 .day-board {
-  display: grid;
-  width: max(100%, 1604px);
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 12px;
-  align-items: stretch;
+  display: block;
+  width: 100%;
 }
 
 .day-card {
-  --day-color: var(--muted);
   position: relative;
-  min-height: 560px;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--line);
@@ -459,57 +455,13 @@ select {
   background: var(--surface);
   box-shadow: var(--shadow-md);
   overflow: hidden;
-  scroll-margin-inline-start: 8px;
-  animation: cardIn 0.4s ease both;
-}
-
-.day-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: var(--day-color);
-}
-
-.day-card:nth-child(1) {
-  --day-color: var(--muted);
-  animation-delay: 0s;
-}
-.day-card:nth-child(2) {
-  --day-color: var(--teal);
-  animation-delay: 0.03s;
-}
-.day-card:nth-child(3) {
-  --day-color: var(--green);
-  animation-delay: 0.06s;
-}
-.day-card:nth-child(4) {
-  --day-color: var(--purple);
-  animation-delay: 0.09s;
-}
-.day-card:nth-child(5) {
-  --day-color: var(--food);
-  animation-delay: 0.12s;
-}
-.day-card:nth-child(6) {
-  --day-color: var(--brown);
-  animation-delay: 0.15s;
-}
-.day-card:nth-child(7) {
-  --day-color: var(--accent);
-  animation-delay: 0.18s;
-}
-.day-card:nth-child(8) {
-  --day-color: var(--pink);
-  animation-delay: 0.21s;
+  animation: cardIn 0.28s ease both;
 }
 
 @keyframes cardIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -522,12 +474,8 @@ select {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 16px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--day-color) 10%, transparent),
-    transparent
-  );
+  padding: 18px 20px;
+  background: var(--surface-2);
   border-bottom: 1px solid var(--line);
 }
 
@@ -562,7 +510,7 @@ select {
 .day-count {
   display: inline-flex;
   margin-top: 6px;
-  color: var(--day-color);
+  color: var(--muted);
   font-size: 0.64rem;
   font-weight: 800;
 }
@@ -590,21 +538,21 @@ select {
 }
 
 .day-add:hover {
-  background: var(--day-color);
-  border-color: var(--day-color);
-  color: var(--surface);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
   transform: rotate(90deg);
 }
 
 .plans {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   align-content: start;
-  gap: 8px;
+  gap: 10px;
   flex: 1;
-  padding: 10px;
-  background: color-mix(in srgb, var(--day-color) 4%, transparent);
+  padding: 16px;
   border: 2px solid transparent;
-  border-radius: var(--radius-md);
+  border-radius: 0;
   transition:
     background 0.16s ease,
     border-color 0.16s ease;
@@ -621,9 +569,9 @@ select {
   display: block;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  background: var(--surface);
-  padding: 10px 30px 24px 30px;
-  text-align: center;
+  background: var(--surface-2);
+  padding: 12px 38px 30px 14px;
+  text-align: left;
   cursor: grab;
   user-select: none;
   box-shadow: var(--shadow-sm);
@@ -639,8 +587,8 @@ select {
 }
 
 .plan-item.selected {
-  border-color: var(--day-color, var(--teal));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--day-color, var(--teal)) 20%, transparent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .plan-item:active {
@@ -665,11 +613,9 @@ select {
   background: var(--surface);
   color: var(--muted);
   padding: 0;
-  opacity: 0;
-  transform: scale(0.85);
+  opacity: 0.55;
   transition:
     opacity 0.14s ease,
-    transform 0.14s ease,
     color 0.14s ease,
     border-color 0.14s ease;
 }
@@ -682,7 +628,6 @@ select {
 .plan-item:hover .delete-plan-button,
 .plan-item:focus-within .delete-plan-button {
   opacity: 1;
-  transform: scale(1);
 }
 
 .delete-plan-button:hover {
@@ -694,17 +639,17 @@ select {
 .plan-title {
   display: block;
   color: var(--ink);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 750;
-  line-height: 1.28;
-  text-align: center;
+  line-height: 1.3;
+  text-align: left;
   overflow-wrap: anywhere;
 }
 
 .plan-sub {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   flex-wrap: wrap;
   gap: 4px 10px;
   margin-top: 8px;
@@ -963,14 +908,6 @@ dialog::backdrop {
   border-color: #c23b2f;
 }
 
-@media (max-width: 1180px) {
-  .day-board {
-    width: 1924px;
-    grid-template-columns: repeat(8, minmax(0, 1fr));
-    padding-bottom: 6px;
-  }
-}
-
 @media (max-width: 720px) {
   body {
     font-size: 0.86rem;
@@ -1033,23 +970,15 @@ dialog::backdrop {
     padding: 10px;
   }
 
-  .day-tabs {
-    display: flex;
-  }
-
-  .day-board {
-    width: 1320px;
+  .plans {
+    grid-template-columns: 1fr;
+    padding: 12px;
     gap: 8px;
-    padding-bottom: 4px;
-  }
-
-  .day-card {
-    min-height: 320px;
   }
 
   .day-head {
     gap: 6px;
-    padding: 12px;
+    padding: 14px;
   }
 
   .day-date {
@@ -1084,20 +1013,19 @@ dialog::backdrop {
   }
 
   .plan-item {
-    padding: 9px 28px 20px 28px;
+    padding: 11px 36px 28px 13px;
   }
 
   .plan-title {
-    font-size: 13px;
+    font-size: 13.5px;
   }
 
   .delete-plan-button {
     opacity: 1;
-    transform: scale(1);
     top: 6px;
     right: 6px;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
   }
 
   .empty-day {

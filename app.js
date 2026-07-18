@@ -73,7 +73,7 @@ const starterEvents = (externalStarterEvents?.length ? externalStarterEvents : d
 let state = loadState();
 let personName = localStorage.getItem(NAME_KEY) || "";
 let firebaseApi = null;
-let dayCardObserver = null;
+let activeDay = days[0].value;
 let suppressSave = false;
 
 const els = {
@@ -354,6 +354,7 @@ function quickAdd() {
 
   state.events = [...state.events, event];
   state.selectedEventId = event.id;
+  activeDay = event.day;
   els.quickTitle.value = "";
   render();
   persist();
@@ -431,6 +432,7 @@ function saveEventFromDialog(event) {
   }
 
   state.selectedEventId = id;
+  activeDay = saved.day;
   els.eventDialog.close();
   render();
   persist();
@@ -470,38 +472,33 @@ function render() {
 }
 
 function renderBoard() {
-  els.board.innerHTML = days
-    .map((day) => {
-      const events = state.events.filter((event) => event.day === day.value).sort(sortEvents);
-      const noTimeCount = events.filter((event) => !event.time).length;
-      const countLabel = `${events.length} plan${noTimeCount ? ` · ${noTimeCount} saatsiz` : ""}`;
-      const heading =
-        day.value === "common"
-          ? `<span class="day-date common-title">Ortak</span>`
-          : `<span class="day-date"><strong>${day.value}</strong> Temmuz</span>`;
-      return `
-        <section class="day-card" id="day-${day.value}" data-day-value="${day.value}">
-          <div class="day-head">
-            <div>
-              ${heading}
-              <span class="day-name">${day.weekday}</span>
-              <span class="day-count">${countLabel}</span>
-            </div>
-            <button class="day-add" type="button" data-add-day="${day.value}" title="Bu güne plan ekle">${iconPlus}</button>
-          </div>
-          <div class="plans" data-drop-day="${day.value}">
-            ${
-              events.length
-                ? events.map(renderPlanItem).join("")
-                : `<div class="empty-day">Bu gün için henüz plan yok</div>`
-            }
-          </div>
-        </section>
-      `;
-    })
-    .join("");
-
-  observeDayCards();
+  const day = days.find((item) => item.value === activeDay) || days[0];
+  const events = state.events.filter((event) => event.day === day.value).sort(sortEvents);
+  const noTimeCount = events.filter((event) => !event.time).length;
+  const countLabel = `${events.length} plan${noTimeCount ? ` · ${noTimeCount} saatsiz` : ""}`;
+  const heading =
+    day.value === "common"
+      ? `<span class="day-date common-title">Ortak</span>`
+      : `<span class="day-date"><strong>${day.value}</strong> Temmuz</span>`;
+  els.board.innerHTML = `
+    <section class="day-card" id="day-${day.value}" data-day-value="${day.value}">
+      <div class="day-head">
+        <div>
+          ${heading}
+          <span class="day-name">${day.weekday}</span>
+          <span class="day-count">${countLabel}</span>
+        </div>
+        <button class="day-add" type="button" data-add-day="${day.value}" title="Bu güne plan ekle">${iconPlus}</button>
+      </div>
+      <div class="plans" data-drop-day="${day.value}">
+        ${
+          events.length
+            ? events.map(renderPlanItem).join("")
+            : `<div class="empty-day">Bu gün için henüz plan yok</div>`
+        }
+      </div>
+    </section>
+  `;
 
   els.board.querySelectorAll("[data-add-day]").forEach((button) => {
     button.addEventListener("click", () => openNewEvent(button.dataset.addDay));
@@ -564,8 +561,9 @@ function renderDayTabs() {
   els.dayTabs.innerHTML = days
     .map((day) => {
       const count = state.events.filter((event) => event.day === day.value).length;
+      const active = day.value === activeDay ? " active" : "";
       return `
-        <button type="button" class="day-tab" data-tab-day="${day.value}">
+        <button type="button" class="day-tab${active}" data-tab-day="${day.value}">
           ${day.short}${count ? `<span class="day-tab-count">${count}</span>` : ""}
         </button>
       `;
@@ -574,50 +572,20 @@ function renderDayTabs() {
 
   els.dayTabs.querySelectorAll("[data-tab-day]").forEach((tab) => {
     tab.addEventListener("click", () => {
-      const card = document.getElementById(`day-${tab.dataset.tabDay}`);
-      if (card) card.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+      if (activeDay === tab.dataset.tabDay) return;
+      activeDay = tab.dataset.tabDay;
+      render();
     });
   });
 
-  setActiveDayTab(days[0]?.value);
+  centerActiveTab();
 }
 
-function setActiveDayTab(value) {
-  if (!els.dayTabs) return;
-  els.dayTabs.querySelectorAll("[data-tab-day]").forEach((tab) => {
-    tab.classList.toggle("active", tab.dataset.tabDay === value);
-  });
-  const activeTab = els.dayTabs.querySelector(".day-tab.active");
-  if (activeTab) activeTab.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-}
-
-function observeDayCards() {
-  if (!els.boardWrap) return;
-  if (dayCardObserver) dayCardObserver.disconnect();
-
-  const cards = els.board.querySelectorAll(".day-card");
-  if (!cards.length) return;
-
-  const ratios = new Map();
-  dayCardObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        ratios.set(entry.target.dataset.dayValue, entry.intersectionRatio);
-      });
-      let bestValue = null;
-      let bestRatio = 0;
-      ratios.forEach((ratio, value) => {
-        if (ratio > bestRatio) {
-          bestRatio = ratio;
-          bestValue = value;
-        }
-      });
-      if (bestValue) setActiveDayTab(bestValue);
-    },
-    { root: els.boardWrap, threshold: [0, 0.25, 0.5, 0.75, 1] },
-  );
-
-  cards.forEach((card) => dayCardObserver.observe(card));
+function centerActiveTab() {
+  const activeTab = els.dayTabs?.querySelector(".day-tab.active");
+  if (!activeTab) return;
+  const target = activeTab.offsetLeft - els.dayTabs.clientWidth / 2 + activeTab.clientWidth / 2;
+  els.dayTabs.scrollTo({ left: target, behavior: "smooth" });
 }
 
 function handleDragStart(event) {
@@ -670,6 +638,7 @@ function handleDrop(event) {
       : item,
   );
   state.selectedEventId = id;
+  activeDay = targetDay;
   render();
   persist();
 }

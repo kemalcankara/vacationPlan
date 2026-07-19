@@ -5,3 +5,5 @@ data/*.jpg
 data/*.pdf
 data/*.png
 data/*.webp
+# Raw personal tickets/screenshots — never commit
+data/myfiles/

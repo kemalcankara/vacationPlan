@@ -60,6 +60,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--accent) 30%, transparent);
 }
@@ -786,11 +790,172 @@ select {
   gap: 8px;
 }
 
+.attachment {
+  align-items: center;
+  gap: 10px;
+}
+
 .attachment a {
+  flex: 1;
   min-width: 0;
   color: var(--teal);
   font-weight: 700;
   overflow-wrap: anywhere;
+}
+
+.attachment-thumb {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  object-fit: cover;
+}
+
+.attachment-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--teal) 14%, transparent);
+  color: var(--teal);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.attachment-remove {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  padding: 0;
+  transition: color 0.14s ease, border-color 0.14s ease;
+}
+
+.attachment-remove svg {
+  width: 11px;
+  height: 11px;
+}
+
+.attachment-remove:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+.file-add {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.file-add input[type="file"] {
+  padding: 10px 12px;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+/* View mode */
+.event-view {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  max-height: 86vh;
+  overflow-y: auto;
+}
+
+.view-body {
+  display: grid;
+  gap: 12px;
+}
+
+.view-badge {
+  justify-self: start;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.view-meta,
+.view-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.view-row a {
+  overflow-wrap: anywhere;
+}
+
+.view-meta .mini-icon,
+.view-row .mini-icon {
+  color: var(--muted);
+}
+
+.view-notes {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.view-attachments {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.view-image {
+  display: block;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.view-image img {
+  display: block;
+  width: 100%;
+  height: 128px;
+  object-fit: cover;
+}
+
+.view-file {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--teal);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.view-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 dialog {
@@ -1089,6 +1254,7 @@ dialog::backdrop {
   }
 
   .event-form,
+  .event-view,
   .name-form,
   .comment-dialog {
     gap: 9px;

@@ -51,7 +51,24 @@
     </div>
 
     <dialog id="eventDialog">
-      <form id="eventForm" method="dialog" class="event-form">
+      <div id="eventView" class="event-view" hidden>
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="dialog-head">
+          <h2 id="viewTitle"></h2>
+          <button id="closeViewBtn" type="button" title="Kapat" class="icon-button">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+          </button>
+        </div>
+        <div id="viewBody" class="view-body"></div>
+        <div class="dialog-actions">
+          <button id="viewDeleteBtn" class="ghost danger" type="button">Sil</button>
+          <div class="view-actions-right">
+            <button id="viewCommentsBtn" class="ghost" type="button">Yorumlar</button>
+            <button id="editModeBtn" class="primary" type="button">Düzenle</button>
+          </div>
+        </div>
+      </div>
+      <form id="eventForm" method="dialog" class="event-form" hidden>
         <div class="sheet-handle" aria-hidden="true"></div>
         <div class="dialog-head">
           <h2 id="formTitle">Plan ekle</h2>
@@ -108,11 +125,15 @@
           <textarea id="eventNotes" rows="3"></textarea>
         </label>
         <section id="eventAttachmentsBlock" class="dialog-section">
-          <h3>Bilet / rezervasyon linkleri</h3>
+          <h3>Ekler — resim, PDF, link</h3>
+          <label class="file-add">
+            Telefondan veya bilgisayardan resim / PDF ekle
+            <input id="attachmentFile" type="file" accept="image/*,application/pdf" multiple />
+          </label>
           <div class="link-add">
             <input id="attachmentName" type="text" placeholder="Başlık" />
-            <input id="attachmentUrl" type="url" placeholder="Google Drive, PDF veya rezervasyon linki" />
-            <button id="addAttachmentLinkBtn" type="button" class="ghost">Ekle</button>
+            <input id="attachmentUrl" type="url" placeholder="veya link yapıştır" />
+            <button id="addAttachmentLinkBtn" type="button" class="ghost">Link ekle</button>
           </div>
           <div id="eventAttachmentList" class="attachment-list"></div>
         </section>

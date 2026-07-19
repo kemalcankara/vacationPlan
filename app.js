@@ -23,6 +23,12 @@ const iconClock =
   '<svg class="mini-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 1.2"/></svg>';
 const iconPin =
   '<svg class="mini-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1c-2.8 0-5 2.1-5 4.9 0 3.6 5 8.6 5 8.6s5-5 5-8.6C13 3.1 10.8 1 8 1zm0 6.8a1.9 1.9 0 110-3.8 1.9 1.9 0 010 3.8z"/></svg>';
+const iconFile =
+  '<svg class="mini-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2H4.5A1.5 1.5 0 003 3.5v9A1.5 1.5 0 004.5 14h7a1.5 1.5 0 001.5-1.5V6z"/><path d="M9 2v4h4"/></svg>';
+
+// Attachments are embedded as data URIs (no file backend). Firestore caps the whole
+// shared doc at ~1MB, so keep each file small and reject anything oversized.
+const MAX_ATTACHMENT_BYTES = 900 * 1024;
 
 const eventTypes = {
   todo: "Plan",
@@ -87,6 +93,13 @@ const els = {
   quickDay: document.querySelector("#quickDay"),
   quickAddBtn: document.querySelector("#quickAddBtn"),
   eventDialog: document.querySelector("#eventDialog"),
+  eventView: document.querySelector("#eventView"),
+  viewTitle: document.querySelector("#viewTitle"),
+  viewBody: document.querySelector("#viewBody"),
+  closeViewBtn: document.querySelector("#closeViewBtn"),
+  viewDeleteBtn: document.querySelector("#viewDeleteBtn"),
+  viewCommentsBtn: document.querySelector("#viewCommentsBtn"),
+  editModeBtn: document.querySelector("#editModeBtn"),
   eventForm: document.querySelector("#eventForm"),
   formTitle: document.querySelector("#formTitle"),
   closeDialogBtn: document.querySelector("#closeDialogBtn"),
@@ -104,6 +117,7 @@ const els = {
   attachmentName: document.querySelector("#attachmentName"),
   attachmentUrl: document.querySelector("#attachmentUrl"),
   addAttachmentLinkBtn: document.querySelector("#addAttachmentLinkBtn"),
+  attachmentFile: document.querySelector("#attachmentFile"),
   eventAttachmentList: document.querySelector("#eventAttachmentList"),
   commentDialog: document.querySelector("#commentDialog"),
   commentForm: document.querySelector("#commentForm"),
@@ -143,11 +157,27 @@ function bindShell() {
   });
 
   els.closeDialogBtn.addEventListener("click", () => els.eventDialog.close());
+  els.closeViewBtn.addEventListener("click", () => els.eventDialog.close());
   els.deleteEventBtn.addEventListener("click", deleteSelectedFromDialog);
+  els.viewDeleteBtn.addEventListener("click", deleteSelectedFromDialog);
+  els.editModeBtn.addEventListener("click", () => {
+    const id = els.eventId.value;
+    if (id) openEditEvent(id);
+  });
+  els.viewCommentsBtn.addEventListener("click", () => {
+    const id = els.eventId.value;
+    if (!id) return;
+    els.eventDialog.close();
+    openComments(id);
+  });
   els.eventForm.addEventListener("submit", saveEventFromDialog);
   els.addAttachmentLinkBtn.addEventListener("click", () => {
     const id = els.eventId.value;
     if (id) addAttachmentLink(id);
+  });
+  els.attachmentFile.addEventListener("change", () => {
+    const id = els.eventId.value;
+    if (id) handleAttachmentFiles(id, els.attachmentFile.files);
   });
   els.closeCommentBtn.addEventListener("click", () => els.commentDialog.close());
   els.commentForm.addEventListener("submit", (event) => {
@@ -360,7 +390,22 @@ function quickAdd() {
   persist();
 }
 
+function showEventView() {
+  els.eventView.hidden = false;
+  els.eventForm.hidden = true;
+}
+
+function showEventForm() {
+  els.eventView.hidden = true;
+  els.eventForm.hidden = false;
+}
+
+function openEventDialog() {
+  if (!els.eventDialog.open) els.eventDialog.showModal();
+}
+
 function openNewEvent(day) {
+  showEventForm();
   els.formTitle.textContent = `${dayLabel(day)} için plan`;
   els.eventForm.reset();
   els.eventId.value = "";
@@ -372,14 +417,31 @@ function openNewEvent(day) {
   els.attachmentName.value = "";
   els.attachmentUrl.value = "";
   els.deleteEventBtn.style.visibility = "hidden";
-  els.eventDialog.showModal();
+  openEventDialog();
   setTimeout(() => els.eventTitle.focus(), 50);
+}
+
+function openViewEvent(id) {
+  const event = getEvent(id);
+  if (!event) return;
+
+  state.selectedEventId = id;
+  els.eventId.value = event.id;
+  els.viewTitle.textContent = event.title;
+  els.viewBody.innerHTML = renderViewBody(event);
+  const commentCount = event.comments.length;
+  els.viewCommentsBtn.textContent = commentCount ? `Yorumlar (${commentCount})` : "Yorumlar";
+  showEventView();
+  render();
+  persist(false);
+  openEventDialog();
 }
 
 function openEditEvent(id) {
   const event = getEvent(id);
   if (!event) return;
 
+  showEventForm();
   state.selectedEventId = id;
   els.formTitle.textContent = "Planı düzenle";
   els.eventId.value = event.id;
@@ -398,7 +460,7 @@ function openEditEvent(id) {
   els.deleteEventBtn.style.visibility = "visible";
   render();
   persist(false);
-  els.eventDialog.showModal();
+  openEventDialog();
 }
 
 function saveEventFromDialog(event) {
@@ -462,8 +524,7 @@ function deleteEvent(id) {
 
 function selectEvent(id) {
   state.selectedEventId = id;
-  openEditEvent(id);
-  persist(false);
+  openViewEvent(id);
 }
 
 function render() {
@@ -647,12 +708,28 @@ function handleDrop(event) {
   persist();
 }
 
+function attachmentSrc(file) {
+  return file.dataUrl || file.url || "";
+}
+
+function isImageAttachment(file) {
+  return file.kind === "image" || String(attachmentSrc(file)).startsWith("data:image");
+}
+
+function isPdfAttachment(file) {
+  return file.kind === "pdf" || String(attachmentSrc(file)).startsWith("data:application/pdf");
+}
+
 function renderAttachment(file) {
-  const url = file.url || "#";
+  const src = attachmentSrc(file) || "#";
+  const thumb = isImageAttachment(file)
+    ? `<img class="attachment-thumb" src="${escapeAttr(src)}" alt="" />`
+    : `<span class="attachment-badge">${isPdfAttachment(file) ? "PDF" : "LINK"}</span>`;
   return `
     <div class="attachment">
-      <a href="${escapeAttr(url)}" target="_blank" rel="noreferrer">${escapeHtml(file.name)}</a>
-      <span class="small">${escapeHtml(file.addedBy || "")}</span>
+      ${thumb}
+      <a href="${escapeAttr(src)}" target="_blank" rel="noreferrer">${escapeHtml(file.name)}</a>
+      <button type="button" class="attachment-remove" data-remove-attachment="${escapeAttr(file.id)}" title="Kaldır" aria-label="Kaldır">${iconClose}</button>
     </div>
   `;
 }
@@ -660,7 +737,54 @@ function renderAttachment(file) {
 function renderEventAttachments(event) {
   els.eventAttachmentList.innerHTML = event.attachments.length
     ? event.attachments.map(renderAttachment).join("")
-    : `<p class="small">Henüz link yok.</p>`;
+    : `<p class="small">Henüz ek yok.</p>`;
+
+  els.eventAttachmentList.querySelectorAll("[data-remove-attachment]").forEach((button) => {
+    button.addEventListener("click", () => removeAttachment(event.id, button.dataset.removeAttachment));
+  });
+}
+
+function renderViewAttachment(file) {
+  const src = attachmentSrc(file);
+  if (!src) return "";
+  if (isImageAttachment(file)) {
+    return `
+      <a class="view-image" href="${escapeAttr(src)}" target="_blank" rel="noreferrer">
+        <img src="${escapeAttr(src)}" alt="${escapeAttr(file.name)}" loading="lazy" />
+      </a>
+    `;
+  }
+  return `
+    <a class="view-file" href="${escapeAttr(src)}" target="_blank" rel="noreferrer">
+      ${iconFile}<span>${escapeHtml(file.name)}</span>
+    </a>
+  `;
+}
+
+function renderViewBody(event) {
+  const type = validEventType(event.type);
+  const timeText = event.time || "Saat yok";
+  const rows = [`<span class="view-badge">${escapeHtml(typeLabel(type))}</span>`];
+
+  rows.push(`<div class="view-meta">${iconClock}<span>${escapeHtml(dayLabel(event.day))} · ${escapeHtml(timeText)}</span></div>`);
+
+  if (event.area) {
+    rows.push(`<div class="view-row">${iconPin}<span>${escapeHtml(event.area)}</span></div>`);
+  }
+  if (event.address) {
+    rows.push(
+      `<div class="view-row">${iconFile}<a href="${escapeAttr(event.address)}" target="_blank" rel="noreferrer">${escapeHtml(event.address)}</a></div>`,
+    );
+  }
+  if (event.notes) {
+    rows.push(`<p class="view-notes">${escapeHtml(event.notes)}</p>`);
+  }
+  if (event.attachments.length) {
+    rows.push(`<div class="view-attachments">${event.attachments.map(renderViewAttachment).join("")}</div>`);
+  }
+  rows.push(`<p class="event-audit">${escapeHtml(eventAuditText(event))}</p>`);
+
+  return rows.join("");
 }
 
 function eventAuditText(event) {
@@ -781,6 +905,137 @@ function addAttachmentLink(eventId) {
   if (updated && els.eventDialog.open && els.eventId.value === eventId) {
     els.attachmentName.value = "";
     els.attachmentUrl.value = "";
+    renderEventAttachments(updated);
+  }
+  render();
+  persist();
+}
+
+async function handleAttachmentFiles(eventId, fileList) {
+  const event = getEvent(eventId);
+  if (!event) return;
+
+  const files = Array.from(fileList || []);
+  if (!files.length) return;
+
+  els.attachmentFile.disabled = true;
+  const newAttachments = [];
+  for (const file of files) {
+    try {
+      const attachment = await fileToAttachment(file);
+      if (attachment) newAttachments.push(attachment);
+    } catch (error) {
+      console.error(error);
+      window.alert(`"${file.name}" eklenemedi.`);
+    }
+  }
+  els.attachmentFile.disabled = false;
+  els.attachmentFile.value = "";
+  if (!newAttachments.length) return;
+
+  state.events = state.events.map((item) =>
+    item.id === eventId
+      ? {
+          ...item,
+          attachments: [...item.attachments, ...newAttachments],
+          updatedAt: new Date().toISOString(),
+          updatedBy: personName || "İsimsiz",
+        }
+      : item,
+  );
+
+  const updated = getEvent(eventId);
+  if (updated && els.eventDialog.open && els.eventId.value === eventId) {
+    renderEventAttachments(updated);
+  }
+  render();
+  persist();
+}
+
+async function fileToAttachment(file) {
+  const isImage = file.type.startsWith("image/");
+  const isPdf = file.type === "application/pdf";
+  if (!isImage && !isPdf) {
+    window.alert(`"${file.name}" desteklenmiyor. Sadece resim veya PDF eklenebilir.`);
+    return null;
+  }
+
+  const dataUrl = isImage ? await compressImage(file) : await readFileAsDataUrl(file);
+
+  if (dataUrl.length > MAX_ATTACHMENT_BYTES) {
+    window.alert(
+      `"${file.name}" çok büyük (ortak plan sınırı ~1MB). ${isPdf ? "Daha küçük bir PDF" : "Daha küçük bir resim"} deneyin.`,
+    );
+    return null;
+  }
+
+  return {
+    id: uid(),
+    name: file.name || (isImage ? "Resim" : "PDF"),
+    kind: isImage ? "image" : "pdf",
+    dataUrl,
+    addedBy: personName || "İsimsiz",
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function compressImage(file, maxDim = 1400, quality = 0.72) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Resim okunamadı"));
+      img.onload = () => {
+        let { width, height } = img;
+        const scale = Math.min(1, maxDim / Math.max(width, height));
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        try {
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        } catch (error) {
+          reject(error);
+        }
+      };
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeAttachment(eventId, attachmentId) {
+  const event = getEvent(eventId);
+  if (!event) return;
+
+  state.events = state.events.map((item) =>
+    item.id === eventId
+      ? {
+          ...item,
+          attachments: item.attachments.filter((attachment) => attachment.id !== attachmentId),
+          updatedAt: new Date().toISOString(),
+          updatedBy: personName || "İsimsiz",
+        }
+      : item,
+  );
+
+  const updated = getEvent(eventId);
+  if (updated && els.eventDialog.open && els.eventId.value === eventId) {
     renderEventAttachments(updated);
   }
   render();

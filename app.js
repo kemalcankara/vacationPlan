@@ -130,6 +130,9 @@ const els = {
   nameDialog: document.querySelector("#nameDialog"),
   nameForm: document.querySelector("#nameForm"),
   dialogName: document.querySelector("#dialogName"),
+  lightbox: document.querySelector("#lightbox"),
+  lightboxContent: document.querySelector("#lightboxContent"),
+  lightboxClose: document.querySelector("#lightboxClose"),
 };
 
 init();
@@ -179,6 +182,15 @@ function bindShell() {
     const id = els.eventId.value;
     if (id) handleAttachmentFiles(id, els.attachmentFile.files);
   });
+  els.lightboxClose.addEventListener("click", () => els.lightbox.close());
+  els.lightbox.addEventListener("click", (event) => {
+    // Tap the backdrop or the image itself to close; the close button also works.
+    if (event.target === els.lightbox || event.target.tagName === "IMG") els.lightbox.close();
+  });
+  els.lightbox.addEventListener("close", () => {
+    els.lightboxContent.innerHTML = "";
+  });
+
   els.closeCommentBtn.addEventListener("click", () => els.commentDialog.close());
   els.commentForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -429,6 +441,12 @@ function openViewEvent(id) {
   els.eventId.value = event.id;
   els.viewTitle.textContent = event.title;
   els.viewBody.innerHTML = renderViewBody(event);
+  els.viewBody.querySelectorAll("[data-att-index]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const att = event.attachments[Number(el.dataset.attIndex)];
+      if (att) openLightbox(att);
+    });
+  });
   const commentCount = event.comments.length;
   els.viewCommentsBtn.textContent = commentCount ? `Yorumlar (${commentCount})` : "Yorumlar";
   showEventView();
@@ -744,14 +762,23 @@ function renderEventAttachments(event) {
   });
 }
 
-function renderViewAttachment(file) {
+function renderViewAttachment(file, index) {
   const src = attachmentSrc(file);
   if (!src) return "";
+  // Embedded files (data URIs) open in an in-app viewer — linking to a data URI
+  // makes phones download it instead of showing it. External links stay as links.
   if (isImageAttachment(file)) {
     return `
-      <a class="view-image" href="${escapeAttr(src)}" target="_blank" rel="noreferrer">
+      <button class="view-image" type="button" data-att-index="${index}">
         <img src="${escapeAttr(src)}" alt="${escapeAttr(file.name)}" loading="lazy" />
-      </a>
+      </button>
+    `;
+  }
+  if (isPdfAttachment(file) && file.dataUrl) {
+    return `
+      <button class="view-file" type="button" data-att-index="${index}">
+        ${iconFile}<span>${escapeHtml(file.name)}</span>
+      </button>
     `;
   }
   return `
@@ -759,6 +786,15 @@ function renderViewAttachment(file) {
       ${iconFile}<span>${escapeHtml(file.name)}</span>
     </a>
   `;
+}
+
+function openLightbox(file) {
+  const src = attachmentSrc(file);
+  if (!src) return;
+  els.lightboxContent.innerHTML = isImageAttachment(file)
+    ? `<img src="${escapeAttr(src)}" alt="${escapeAttr(file.name)}" />`
+    : `<iframe src="${escapeAttr(src)}" title="${escapeAttr(file.name)}"></iframe>`;
+  if (!els.lightbox.open) els.lightbox.showModal();
 }
 
 function renderViewBody(event) {
@@ -780,7 +816,9 @@ function renderViewBody(event) {
     rows.push(`<p class="view-notes">${escapeHtml(event.notes)}</p>`);
   }
   if (event.attachments.length) {
-    rows.push(`<div class="view-attachments">${event.attachments.map(renderViewAttachment).join("")}</div>`);
+    rows.push(
+      `<div class="view-attachments">${event.attachments.map((file, index) => renderViewAttachment(file, index)).join("")}</div>`,
+    );
   }
   rows.push(`<p class="event-audit">${escapeHtml(eventAuditText(event))}</p>`);
 

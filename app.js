@@ -1,6 +1,7 @@
 const STORAGE_KEY = "londonPlannerSimple.v1";
 const NAME_KEY = "londonPlannerName.v1";
 const SEED_VERSION_KEY = "londonPlannerSeedVersion.v1";
+const MIGRATIONS_KEY = "londonPlannerMigrations.v1";
 const planId = window.LONDON_PLAN_ID || "london-trip";
 const firebaseConfig = window.LONDON_PLANNER_FIREBASE;
 
@@ -333,26 +334,51 @@ function normalizeEvent(event) {
 
 function cleanupDemoEvents({ persistChanges = true } = {}) {
   let changed = false;
-  state.events = state.events
-    .filter((event) => {
-      const keep = event.title !== "Otele yerleşme";
-      if (!keep) changed = true;
-      return keep;
-    })
-    .map((event) => {
-      if (/sky garden|british museum/i.test(event.title) && event.day !== "common") {
-        changed = true;
-        return {
-          ...event,
-          day: "common",
-          updatedAt: new Date().toISOString(),
-          updatedBy: event.updatedBy || "Sistem",
-        };
-      }
-      return event;
-    });
+  state.events = state.events.filter((event) => {
+    const keep = event.title !== "Otele yerleşme";
+    if (!keep) changed = true;
+    return keep;
+  });
 
+  if (runOneTimeMigrations()) changed = true;
   if (changed && persistChanges) persist();
+  return changed;
+}
+
+// Tek seferlik düzeltmeler: her yüklemede değil, sadece ilk kez çalışır.
+// Aksi halde kullanıcının gün değişikliklerini geri alır.
+const ONE_TIME_MIGRATIONS = [
+  {
+    key: "british-museum-20-1320",
+    run(event) {
+      if (!/british museum/i.test(event.title)) return null;
+      if (event.day === "20" && event.time === "13:20") return null;
+      return { ...event, day: "20", time: "13:20" };
+    },
+  },
+];
+
+function runOneTimeMigrations() {
+  let changed = false;
+  let done = [];
+  try {
+    done = JSON.parse(localStorage.getItem(MIGRATIONS_KEY) || "[]");
+  } catch {
+    done = [];
+  }
+
+  ONE_TIME_MIGRATIONS.forEach((migration) => {
+    if (done.includes(migration.key)) return;
+    state.events = state.events.map((event) => {
+      const next = migration.run(event);
+      if (!next) return event;
+      changed = true;
+      return { ...next, updatedAt: new Date().toISOString(), updatedBy: event.updatedBy || "Sistem" };
+    });
+    done.push(migration.key);
+  });
+
+  localStorage.setItem(MIGRATIONS_KEY, JSON.stringify(done));
   return changed;
 }
 

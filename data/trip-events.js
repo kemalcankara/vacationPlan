@@ -1,4 +1,4 @@
-window.LONDON_STARTER_EVENTS_VERSION = "privacy-clean-2026-07-09";
+window.LONDON_STARTER_EVENTS_VERSION = "british-museum-day20-2026-07-21";
 window.LONDON_STARTER_EVENTS = [
   {
     id: "common-sky-garden",
@@ -15,12 +15,12 @@ window.LONDON_STARTER_EVENTS = [
   },
   {
     id: "common-british-museum",
-    day: "common",
-    time: "",
+    day: "20",
+    time: "13:20",
     title: "British Museum",
     area: "Bloomsbury",
     address: "",
-    notes: "Yagmurlu gun alternatifi olabilir.",
+    notes: "20 Temmuz 13:20 icin planlandi.",
     comments: [],
     attachments: [],
     updatedAt: "2026-07-09T15:00:00.000Z",

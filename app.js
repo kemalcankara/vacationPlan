@@ -2,6 +2,18 @@ const STORAGE_KEY = "londonPlannerSimple.v1";
 const NAME_KEY = "londonPlannerName.v1";
 const SEED_VERSION_KEY = "londonPlannerSeedVersion.v1";
 const MIGRATIONS_KEY = "londonPlannerMigrations.v1";
+// Tek seferlik düzeltmeler: her yüklemede değil, sadece ilk kez çalışır.
+// Aksi halde kullanıcının gün değişikliklerini geri alır.
+const ONE_TIME_MIGRATIONS = [
+  {
+    key: "british-museum-20-1320",
+    run(event) {
+      if (!/british museum/i.test(event.title)) return null;
+      if (event.day === "20" && event.time === "13:20") return null;
+      return { ...event, day: "20", time: "13:20" };
+    },
+  },
+];
 const planId = window.LONDON_PLAN_ID || "london-trip";
 const firebaseConfig = window.LONDON_PLANNER_FIREBASE;
 
@@ -344,19 +356,6 @@ function cleanupDemoEvents({ persistChanges = true } = {}) {
   if (changed && persistChanges) persist();
   return changed;
 }
-
-// Tek seferlik düzeltmeler: her yüklemede değil, sadece ilk kez çalışır.
-// Aksi halde kullanıcının gün değişikliklerini geri alır.
-const ONE_TIME_MIGRATIONS = [
-  {
-    key: "british-museum-20-1320",
-    run(event) {
-      if (!/british museum/i.test(event.title)) return null;
-      if (event.day === "20" && event.time === "13:20") return null;
-      return { ...event, day: "20", time: "13:20" };
-    },
-  },
-];
 
 function runOneTimeMigrations() {
   let changed = false;
